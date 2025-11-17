@@ -58,11 +58,11 @@ const RewardEventEdit = () => {
         name: eventData.name,
         type: eventData.type,
         description: eventData.description,
+        rewardDescription: eventData.rewardDescription || undefined,
         dateRange:
           eventData.startDate && eventData.endDate
             ? [dayjs(eventData.startDate), dayjs(eventData.endDate)]
             : null,
-        maxSlots: eventData.maxSlots || 0,
         budget: eventData.budget || undefined,
       });
     } catch (error) {
@@ -82,15 +82,11 @@ const RewardEventEdit = () => {
         name: values.name,
         type: values.type,
         description: values.description,
+        rewardDescription: values.rewardDescription || undefined,
         startDate: values.dateRange?.[0]?.toISOString(),
         endDate: values.dateRange?.[1]?.toISOString(),
         budget: values.budget || undefined,
       };
-
-      // Chỉ cho phép cập nhật maxSlots nếu chưa có đăng ký
-      if (!hasRegistrations) {
-        updateData.maxSlots = values.maxSlots || 0;
-      }
 
       await rewardService.events.update(id, updateData);
       message.success("Cập nhật sự kiện thành công!");
@@ -148,15 +144,6 @@ const RewardEventEdit = () => {
             </Col>
           </Row>
 
-          {hasRegistrations && (
-            <Alert
-              message="Lưu ý"
-              description="Sự kiện này đã có người đăng ký. Bạn không thể thay đổi số slot tối đa. Bạn có thể đóng sự kiện sớm hoặc gia hạn thời gian."
-              type="warning"
-              showIcon
-              closable
-            />
-          )}
 
           <Form
             form={form}
@@ -193,28 +180,6 @@ const RewardEventEdit = () => {
                     <Option value="ANNUAL">Thường niên</Option>
                     <Option value="SPECIAL">Đặc biệt</Option>
                   </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="maxSlots"
-                  label="Số slot tối đa"
-                  rules={[
-                    {
-                      type: "number",
-                      min: 0,
-                      message: "Số slot phải lớn hơn hoặc bằng 0",
-                    },
-                  ]}
-                  tooltip="Nhập 0 để không giới hạn số lượng đăng ký"
-                >
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    size="large"
-                    min={0}
-                    placeholder="0 = không giới hạn"
-                    disabled={hasRegistrations}
-                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -264,6 +229,17 @@ const RewardEventEdit = () => {
                   <TextArea
                     rows={4}
                     placeholder="Nhập mô tả chi tiết về sự kiện (tùy chọn)"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item name="rewardDescription" label="Phần thưởng">
+                  <TextArea
+                    rows={3}
+                    placeholder="Nhập mô tả phần thưởng (ví dụ: 5 cuốn sách, 1 bộ quà Tết, 200.000 VNĐ...)"
                   />
                 </Form.Item>
               </Col>

@@ -16,7 +16,6 @@ import {
   Select,
 } from "antd";
 import {
-  PlusOutlined,
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -71,26 +70,10 @@ const RewardEventList = () => {
       const response = await rewardService.events.getAll(params);
       const eventList = response.docs || [];
 
-      // Tính số slot đã đăng ký
-      const eventsWithRegistrations = await Promise.all(
-        eventList.map(async (event) => {
-          try {
-            const regResponse = await rewardService.events.getRegistrations(
-              event._id
-            );
-            const registeredCount = regResponse.docs?.length || 0;
-            return {
-              ...event,
-              registeredCount,
-            };
-          } catch (error) {
-            return { ...event, registeredCount: 0 };
-          }
-        })
-      );
+      // Backend đã trả về registeredCount và distributedCount, không cần tính lại
 
       setEvents(
-        eventsWithRegistrations.map((e) => ({
+        eventList.map((e) => ({
           key: e._id,
           ...e,
         }))
@@ -158,15 +141,26 @@ const RewardEventList = () => {
     try {
       const event = await rewardService.events.getById(eventId);
 
-      // Fetch registration count
+      // Fetch registration và distribution count
       try {
         const regResponse = await rewardService.events.getRegistrations(
           eventId
         );
         const registeredCount = regResponse.docs?.length || 0;
-        setViewingEvent({ ...event, registeredCount });
+        const distributedCount = regResponse.docs?.filter(
+          (reg) => reg.status === "DISTRIBUTED"
+        ).length || 0;
+        setViewingEvent({ 
+          ...event, 
+          registeredCount,
+          distributedCount,
+        });
       } catch (error) {
-        setViewingEvent({ ...event, registeredCount: 0 });
+        setViewingEvent({ 
+          ...event, 
+          registeredCount: 0,
+          distributedCount: 0,
+        });
       }
 
       setIsViewModalVisible(true);
@@ -267,15 +261,15 @@ const RewardEventList = () => {
       },
     },
     {
-      title: "Slot",
-      key: "slots",
-      width: 100,
+      title: "Tỷ lệ nhận quà",
+      key: "distributionRate",
+      width: 120,
       render: (_, record) => {
+        const distributed = record.distributedCount || 0;
         const registered = record.registeredCount || 0;
-        const max = record.maxSlots || 0;
         return (
           <Text>
-            {registered}/{max || "∞"}
+            {distributed}/{registered || 0}
           </Text>
         );
       },
@@ -401,13 +395,6 @@ const RewardEventList = () => {
                 Xuất Excel
               </Button>
               <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate("/leader/reward-events/add")}
-              >
-                Tạo sự kiện mới
-              </Button>
-              <Button
                 icon={<CalendarOutlined />}
                 onClick={() => navigate("/leader/reward-events/schedule")}
               >
@@ -469,7 +456,7 @@ const RewardEventList = () => {
               setPagination({ ...pagination, current: page, pageSize });
             },
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1000 }}
         />
       </Card>
 
@@ -538,22 +525,44 @@ const RewardEventList = () => {
                 ? dayjs(viewingEvent.endDate).format("DD/MM/YYYY HH:mm")
                 : "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Số slot tối đa">
-              {viewingEvent.maxSlots || "Không giới hạn"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Số slot đã đăng ký">
+            <Descriptions.Item label="Số người đăng ký">
               <Text
                 strong
                 style={{
                   color:
                     (viewingEvent.registeredCount || 0) > 0
-                      ? "#52c41a"
+                      ? "#1890ff"
                       : "#999",
                 }}
               >
                 {viewingEvent.registeredCount || 0}
               </Text>
             </Descriptions.Item>
+            <Descriptions.Item label="Số người nhận quà">
+              <Text
+                strong
+                style={{
+                  color:
+                    (viewingEvent.distributedCount || 0) > 0
+                      ? "#52c41a"
+                      : "#999",
+                }}
+              >
+                {viewingEvent.distributedCount || 0}
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Tỷ lệ nhận quà">
+              <Text strong>
+                {viewingEvent.distributedCount || 0} / {viewingEvent.registeredCount || 0}
+              </Text>
+            </Descriptions.Item>
+            {viewingEvent.rewardDescription && (
+              <Descriptions.Item label="Phần thưởng" span={2}>
+                <Text strong style={{ color: "#1890ff" }}>
+                  {viewingEvent.rewardDescription}
+                </Text>
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Ngân sách" span={2}>
               {viewingEvent.budget
                 ? `${viewingEvent.budget.toLocaleString("vi-VN")} VNĐ`
