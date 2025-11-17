@@ -137,8 +137,6 @@ const CitizenDashboard = () => {
         const allNotifs =
           notificationsResponse.docs || notificationsResponse || [];
 
-          console.log("🔔 Notifications from backend:", allNotifs);
-
         // Filter: CHỈ lấy thông báo "phản hồi" (title có "được duyệt" hoặc "bị từ chối")
         // Loại bỏ thông báo "yêu cầu mới"
         const responseNotifs = allNotifs.filter((n) => {
